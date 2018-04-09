@@ -149,6 +149,38 @@ def draw_polygons_vec(draw_svg, pattern):
 
         polygon_thick_vec( draw_svg, l, color)
 
+def draw_polygon_paths_vec(draw_svg, pattern):
+    for i, polygon in enumerate(pattern.list_polygons):
+
+        color = pattern.colors[polygon.color_index]
+        l = list()
+        for v in polygon.list_vertices:
+
+            vx = v.x
+            if not isinstance(v.x, (float,int)):                
+                vx = v.x.item()
+
+            vy = v.y
+            if not isinstance(v.y, (float,int)):
+                vy = v.y.item()
+
+            l.append((vx,vy))
+        polygon_path_vec(draw_svg, l, color)
+
+def polygon_path_vec(draw_svg, points, color):
+    start_point = points.pop(0)
+    current_point = start_point
+    bezier_string = 'M{},{}'.format(start_point[0], start_point[1])
+    for point in points:
+        bezier_string = bezier_string + ' S{},{} {},{}'.format(current_point[0], current_point[1], point[0], point[1])
+        current_point = point
+
+    bezier_string = bezier_string + ' S{},{} {},{}'.format(current_point[0], current_point[1],
+        start_point[0], start_point[1])
+
+    bezier_string = bezier_string + ' Z'
+    draw_svg.add(draw_svg.path(d=bezier_string, fill=color, stroke='none'))
+
 def polygon_thick_vec(draw_svg, points, color):
     # draw_svg.add(draw_svg.polyline(points, stroke=color))
     draw_svg.add(draw_svg.polygon(points, fill=color, stroke=color))
