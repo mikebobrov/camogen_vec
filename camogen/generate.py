@@ -15,6 +15,8 @@ from camogen.helpers import *
 from PIL import Image, ImageDraw
 import svgwrite
 
+from camogen.polygonize import clusterize
+
 
 def generate_polygons(pattern, polygon, depth):
     """
@@ -47,7 +49,7 @@ def generate_polygons(pattern, polygon, depth):
         edge_lengths = []
 
         for i in range(nbr_edges):
-            edge_lengths.append(dist_vertices(polygon.list_vertices[i], polygon.list_vertices[(i+1) % nbr_edges]))
+            edge_lengths.append(dist_vertices(polygon.list_vertices[i], polygon.list_vertices[(i + 1) % nbr_edges]))
 
         # We sort the edges in function of their lengths. We are interested in the indices
         idx_edge_sorted = np.argsort(edge_lengths)[::-1]
@@ -76,17 +78,17 @@ def generate_polygons(pattern, polygon, depth):
         # The dividing edge is included in both
 
         # Polygon A
-        for i in range(0, idx_edge_a+1):
+        for i in range(0, idx_edge_a + 1):
             polygon_a.add_vertex(polygon.list_vertices[i])
 
         for v in edge_c:
             polygon_a.add_vertex(v)
 
-        for i in range(idx_edge_b+1, nbr_edges):
+        for i in range(idx_edge_b + 1, nbr_edges):
             polygon_a.add_vertex(polygon.list_vertices[i])
 
         # Polygon B
-        for i in range(idx_edge_a+1, idx_edge_b+1):
+        for i in range(idx_edge_a + 1, idx_edge_b + 1):
             polygon_b.add_vertex(polygon.list_vertices[i])
 
         for v in edge_c[::-1]:
@@ -128,21 +130,15 @@ def generate_image(pattern, file_name):
             color_polygon(pattern, i, np.random.randint(len(pattern.colors)), pattern.color_bleed)
 
     # Background
-    draw.rectangle((0, 0, pattern.width-1, pattern.height-1), fill=pattern.colors[0])
-
-    # Drajw the polygons with their correct color
-    draw_polygons(draw, pattern, use_index=False)
+    draw.rectangle((0, 0, pattern.width - 1, pattern.height - 1), fill=pattern.colors[0])
 
     result = svgwrite.Drawing(file_name, size=(pattern.width.item(), pattern.height.item()))
-    # Now, we can do the postprocessing
 
-    # We add the spots
-    # add_spots(pattern, image, draw)
+    clusters = clusterize(pattern)
 
-    # We pixelize
-    # pixelize(pattern, image, draw)
-    draw_polygons_vec(result, pattern)
-    pixelize_vec(pattern, image, result)
+    # draw_polygons_vec(result, pattern)
+    # pixelize_vec(pattern, image, result)
+    draw_clusters(result, clusters, pattern)
     result.save()
     # image.save("{0}.png".format(file_name))
 

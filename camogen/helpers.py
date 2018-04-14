@@ -10,6 +10,8 @@
 
 from camogen.vertex import *
 import numpy as np
+from shapely.geometry import MultiLineString, LineString, Polygon as SPolygon
+from shapely.ops import cascaded_union
 
 
 def distort():
@@ -17,7 +19,7 @@ def distort():
     :return: random value between 0 and 1
     """
     # return np.random.rand()
-    return np.random.randint(10)/11
+    return np.random.randint(10) / 11
 
 
 def dist_vertices(v1, v2):
@@ -97,8 +99,8 @@ def new_edge(va1, va2, vb1, vb2):
         raise ValueError("Element vb2 should be of the class Vertex")
 
     # Compute the fractions
-    frac_a = 0.4 + np.random.randint(3)/10
-    frac_b = 0.4 + np.random.randint(3)/10
+    frac_a = 0.4 + np.random.randint(3) / 10
+    frac_b = 0.4 + np.random.randint(3) / 10
 
     # Split Edge A
     new_vert_a = edge_split(va1, va2, frac_a)
@@ -120,7 +122,6 @@ def draw_polygons(draw, pattern, use_index):
     """
 
     for i, polygon in enumerate(pattern.list_polygons):
-
         color = pattern.colors[polygon.color_index] if not use_index else "#%06x" % i
 
         polygon_thick(draw, [(v.x, v.y) for v in polygon.list_vertices], color)
@@ -130,6 +131,7 @@ def polygon_thick(draw, points, color):
     draw.line(points, fill=color, width=2)
     draw.polygon(points, fill=color)
 
+
 def draw_polygons_vec(draw_svg, pattern):
     for i, polygon in enumerate(pattern.list_polygons):
 
@@ -138,16 +140,45 @@ def draw_polygons_vec(draw_svg, pattern):
         for v in polygon.list_vertices:
 
             vx = v.x
-            if not isinstance(v.x, (float,int)):                
+            if not isinstance(v.x, (float, int)):
                 vx = v.x.item()
 
             vy = v.y
-            if not isinstance(v.y, (float,int)):
+            if not isinstance(v.y, (float, int)):
                 vy = v.y.item()
 
-            l.append((vx,vy))
+            l.append((vx, vy))
 
-        polygon_thick_vec( draw_svg, l, color)
+        polygon_thick_vec(draw_svg, l, color)
+
+
+def draw_clusters(draw, clusters, pattern):
+    for cluster in clusters:
+        color = pattern.colors[cluster[0].color_index]
+        polygons = [
+            SPolygon(
+                [(v.x, v.y) for v in p.list_vertices]
+            ) for p in cluster
+        ]
+        path = cascaded_union(polygons).buffer(0)
+        draw_path(draw, path, color)
+
+
+def draw_path(draw_svg, line, color):
+    print(line.svg())
+    # start_point = points.pop(0)
+    # current_point = start_point
+    # bezier_string = 'M{},{}'.format(start_point[0], start_point[1])
+    # for point in points:
+    #     bezier_string = bezier_string + ' S{},{} {},{}'.format(current_point[0], current_point[1], point[0], point[1])
+    #     current_point = point
+    #
+    # bezier_string = bezier_string + ' S{},{} {},{}'.format(current_point[0], current_point[1],
+    #                                                        start_point[0], start_point[1])
+
+    # bezier_string = bezier_string + ' Z'
+    # draw_svg.add(draw_svg.path(d=bezier_string, fill=color, stroke='none'))
+
 
 def draw_polygon_paths_vec(draw_svg, pattern):
     for i, polygon in enumerate(pattern.list_polygons):
@@ -157,15 +188,16 @@ def draw_polygon_paths_vec(draw_svg, pattern):
         for v in polygon.list_vertices:
 
             vx = v.x
-            if not isinstance(v.x, (float,int)):                
+            if not isinstance(v.x, (float, int)):
                 vx = v.x.item()
 
             vy = v.y
-            if not isinstance(v.y, (float,int)):
+            if not isinstance(v.y, (float, int)):
                 vy = v.y.item()
 
-            l.append((vx,vy))
+            l.append((vx, vy))
         polygon_path_vec(draw_svg, l, color)
+
 
 def polygon_path_vec(draw_svg, points, color):
     start_point = points.pop(0)
@@ -176,14 +208,16 @@ def polygon_path_vec(draw_svg, points, color):
         current_point = point
 
     bezier_string = bezier_string + ' S{},{} {},{}'.format(current_point[0], current_point[1],
-        start_point[0], start_point[1])
+                                                           start_point[0], start_point[1])
 
     bezier_string = bezier_string + ' Z'
     draw_svg.add(draw_svg.path(d=bezier_string, fill=color, stroke='none'))
 
+
 def polygon_thick_vec(draw_svg, points, color):
     # draw_svg.add(draw_svg.polyline(points, stroke=color))
     draw_svg.add(draw_svg.polygon(points, fill=color, stroke=color))
+
 
 def find_neighbours(image, pattern):
     """
@@ -323,20 +357,19 @@ def add_spots(pattern, image, draw):
 
     spots_to_add = pattern.spots_nbr
     while spots_to_add:
-
         # Radius of the spot
-        spot_radius = np.random.randint(pattern.spots_radius_min, pattern.spots_radius_max)/2
+        spot_radius = np.random.randint(pattern.spots_radius_min, pattern.spots_radius_max) / 2
 
         # Position of the spot
-        spot_x = np.random.randint(spot_radius, pattern.width-spot_radius)
-        spot_y = np.random.randint(spot_radius, pattern.height-spot_radius)
+        spot_x = np.random.randint(spot_radius, pattern.width - spot_radius)
+        spot_y = np.random.randint(spot_radius, pattern.height - spot_radius)
 
         # Pick a sampling point slightly off the spot center. Make sure it's on the canvas
-        sample_x = spot_x - pattern.spots_sampling + np.random.randint(pattern.spots_sampling*2 + 1)
-        sample_x = min(pattern.width-1, max(0, sample_x))
+        sample_x = spot_x - pattern.spots_sampling + np.random.randint(pattern.spots_sampling * 2 + 1)
+        sample_x = min(pattern.width - 1, max(0, sample_x))
 
         sample_y = spot_y - pattern.spots_sampling + np.random.randint(pattern.spots_sampling * 2 + 1)
-        sample_y = min(pattern.width-1, max(0, sample_y))
+        sample_y = min(pattern.width - 1, max(0, sample_y))
 
         # Get the color at this spot
         r, g, b = image.getpixel((int(sample_x), int(sample_y)))
@@ -362,22 +395,22 @@ def pixelize(pattern, image, draw):
         pixel_h = int(pattern.height / pattern.pixelize_density_y)
 
         # We loop through each pixel.
-        for x in range(int(pixel_w/2), pattern.width, pixel_w):
+        for x in range(int(pixel_w / 2), pattern.width, pixel_w):
             for y in range(int(pixel_h / 2), pattern.width, pixel_h):
 
                 # Check if we pixelize this pixel
                 if pattern.pixelize_percentage > np.random.rand():
-
                     # Sample a color slightly off the pixel center and draw this as a filled rectangle
                     sample_x = x - pattern.pixelize_sampling + np.random.randint(pattern.pixelize_sampling * 2 + 1)
                     sample_x = min(pattern.width - 1, max(0, sample_x))
 
                     sample_y = y - pattern.pixelize_sampling + np.random.randint(pattern.pixelize_sampling * 2 + 1)
-                    sample_y = min(pattern.width-1, max(0, sample_y))
+                    sample_y = min(pattern.width - 1, max(0, sample_y))
                     r, g, b = image.getpixel((int(sample_x), int(sample_y)))
                     hex = '#%02x%02x%02x' % (r, g, b)
 
-                    draw.rectangle((x - pixel_w/2, y - pixel_h/2, x + pixel_w/2, y + pixel_h/2), fill=hex)
+                    draw.rectangle((x - pixel_w / 2, y - pixel_h / 2, x + pixel_w / 2, y + pixel_h / 2), fill=hex)
+
 
 def pixelize_vec(pattern, image, draw_svg):
     """
@@ -395,22 +428,19 @@ def pixelize_vec(pattern, image, draw_svg):
         pixel_h = int(pattern.height / pattern.pixelize_density_y)
 
         # We loop through each pixel.
-        for x in range(int(pixel_w/2), pattern.width, pixel_w):
+        for x in range(int(pixel_w / 2), pattern.width, pixel_w):
             for y in range(int(pixel_h / 2), pattern.width, pixel_h):
 
                 # Check if we pixelize this pixel
                 if pattern.pixelize_percentage > np.random.rand():
-
                     # Sample a color slightly off the pixel center and draw this as a filled rectangle
                     sample_x = x - pattern.pixelize_sampling + np.random.randint(pattern.pixelize_sampling * 2 + 1)
                     sample_x = min(pattern.width - 1, max(0, sample_x))
 
                     sample_y = y - pattern.pixelize_sampling + np.random.randint(pattern.pixelize_sampling * 2 + 1)
-                    sample_y = min(pattern.width-1, max(0, sample_y))
+                    sample_y = min(pattern.width - 1, max(0, sample_y))
                     r, g, b = image.getpixel((int(sample_x), int(sample_y)))
                     hex = '#%02x%02x%02x' % (r, g, b)
 
-                    draw_svg.add(draw_svg.rect(insert=(x - pixel_w/2, y - pixel_h/2), size=(pixel_w,pixel_h), fill=hex))
-                    
-
-
+                    draw_svg.add(
+                        draw_svg.rect(insert=(x - pixel_w / 2, y - pixel_h / 2), size=(pixel_w, pixel_h), fill=hex))
