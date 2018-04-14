@@ -1,0 +1,4 @@
+numpy
+svgwrite
+shapely
+pillow

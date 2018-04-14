@@ -15,7 +15,6 @@ from camogen.helpers import *
 from PIL import Image, ImageDraw
 import svgwrite
 
-from camogen.polygonize import clusterize
 
 
 def generate_polygons(pattern, polygon, depth):
@@ -134,11 +133,9 @@ def generate_image(pattern, file_name):
 
     result = svgwrite.Drawing(file_name, size=(pattern.width.item(), pattern.height.item()))
 
-    clusters = clusterize(pattern)
-
-    # draw_polygons_vec(result, pattern)
+    draw_polygons_vec(result, pattern)
     # pixelize_vec(pattern, image, result)
-    draw_clusters(result, clusters, pattern)
+    # draw_clusters(result, clusters, pattern)
     result.save()
     # image.save("{0}.png".format(file_name))
 
