@@ -13,4 +13,7 @@ parameters = {'width': 735, 'height': 812, 'polygon_size': 300, 'color_bleed': 3
               'colors': ['#F1F1F1', '#FF3333', '#333333'],
               }
 
-generate(parameters, './images/result.svg')
+images_count = 2
+
+for i in range(images_count):
+    generate(parameters, './images/result_{}.svg'.format(i))
